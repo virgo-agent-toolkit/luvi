@@ -113,6 +113,12 @@ int main(int argc, char* argv[] ) {
 
   luv_set_thread_cb(vm_acquire, vm_release);
 
+#ifdef WITH_SIGAR
+  // Store luvi module definition at preload.sigar
+  lua_pushcfunction(L, luaopen_sigar);
+  lua_setfield(L, -2, "sigar");
+#endif
+
 #ifdef WITH_WINSVC
   // Store luvi module definition at preload.openssl
   lua_pushcfunction(L, luaopen_winsvc);
