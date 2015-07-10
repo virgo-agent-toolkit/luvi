@@ -69,9 +69,15 @@ int main(int argc, char* argv[] ) {
 #endif
 
 #ifdef WITH_ZLIB
-  // Store luvi module definition at preload.openssl
+  // Store luvi module definition at preload.zlib
   lua_pushcfunction(L, luaopen_zlib);
   lua_setfield(L, -2, "zlib");
+#endif
+
+#ifdef WITH_SIGAR
+  // Store luvi module definition at preload.sigar
+  lua_pushcfunction(L, luaopen_sigar);
+  lua_setfield(L, -2, "sigar");
 #endif
 
 #ifdef WITH_WINSVC
