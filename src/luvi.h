@@ -50,6 +50,10 @@ LUALIB_API int luaopen_zlib(lua_State * const L);
 #ifdef WITH_LPEG
 int luaopen_lpeg(lua_State* L);
 #endif
+#ifdef WITH_SIGAR
+LUALIB_API int luaopen_sigar (lua_State *L);
+#endif
+
 #endif
 
 #if (LUA_VERSION_NUM >= 502)
