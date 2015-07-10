@@ -1,6 +1,6 @@
-LUVI_TAG=$(shell git describe)
+LUVI_TAG=$(shell git describe --tags)
 LUVI_ARCH=$(shell uname -s)_$(shell uname -m)
-LUVI_PUBLISH_USER?=luvit
+LUVI_PUBLISH_USER?=virgo-agent-toolkit
 LUVI_PUBLISH_REPO?=luvi
 
 OS:=$(shell uname -s)
@@ -61,10 +61,10 @@ tiny: deps/luv/CMakeLists.txt
 
 # Configure the build with openssl statically included
 regular: deps/luv/CMakeLists.txt
-	cmake $(CMAKE_FLAGS) $(CPACK_FLAGS) -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithPCRE=ON -DWithLPEG=ON -DWithSharedPCRE=OFF
+	cmake $(CMAKE_FLAGS) $(CPACK_FLAGS) -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithPCRE=ON -DWithSharedPCRE=OFF -DWithSigar=ON -DWithLPEG=ON
 
 regular-asm: deps/luv/CMakeLists.txt
-	cmake $(CMAKE_FLAGS) $(CPACK_FLAGS) -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithOpenSSLASM=ON -DWithPCRE=ON -DWithLPEG=ON -DWithSharedPCRE=OFF
+	cmake $(CMAKE_FLAGS) $(CPACK_FLAGS) -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithOpenSSLASM=ON -DWithPCRE=ON -DWithSharedPCRE=OFF -DWithSigar=ON -DWithLPEG=ON
 
 package: deps/luv/CMakeLists.txt
 	cmake --build build -- package
@@ -115,4 +115,4 @@ publish-tiny: reset
 publish-regular: reset
 	$(MAKE) regular-asm test && \
 	github-release upload --user ${LUVI_PUBLISH_USER} --repo ${LUVI_PUBLISH_REPO} --tag ${LUVI_TAG} \
-	  --file build/luvi --name luvi-regular-${LUVI_ARCH}
+	  --file build/luvi --name luvi-sigar-${LUVI_ARCH}
