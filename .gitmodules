@@ -13,3 +13,6 @@
 [submodule "deps/lua-zlib"]
 	path = deps/lua-zlib
 	url = https://github.com/brimworks/lua-zlib.git
+[submodule "deps/lua-sigar"]
+	path = deps/lua-sigar
+	url = https://github.com/virgo-agent-toolkit/lua-sigar.git
