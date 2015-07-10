@@ -1,6 +1,6 @@
 @ECHO off
 
-set LUVI_PUBLISH_USER=luvit
+set LUVI_PUBLISH_USER=virgo-agent-toolkit
 set LUVI_PUBLISH_REPO=luvi
 
 set GENERATOR=Visual Studio 12
@@ -15,22 +15,22 @@ GOTO :build
 
 :regular
 ECHO "Building regular64"
-cmake -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithPCRE=ON -DWithLPEG=ON -DWithSharedPCRE=OFF -H. -Bbuild  -G"%GENERATOR64%"
+cmake -DWithSigar=ON -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithLPEG=ON -DWithPCRE=ON -DWithSharedPCRE=OFF -H. -Bbuild  -G"%GENERATOR64%"
 GOTO :end
 
 :regular-asm
 ECHO "Building regular64 asm"
-cmake -DWithOpenSSLASM=ON -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithPCRE=ON -DWithLPEG=ON -DWithSharedPCRE=OFF -H. -Bbuild  -G"%GENERATOR64%"
+cmake -DWithSigar=ON -DWithOpenSSLASM=ON -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithLPEG=ON -DWithPCRE=ON -DWithSharedPCRE=OFF -H. -Bbuild  -G"%GENERATOR64%"
 GOTO :end
 
 :regular32
 ECHO "Building regular32"
-cmake -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithPCRE=ON -DWithLPEG=ON -DWithSharedPCRE=OFF -H. -Bbuild  -G"%GENERATOR%"
+cmake -DWithSigar=ON -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithLPEG=ON -DWithPCRE=ON -DWithSharedPCRE=OFF -H. -Bbuild  -G"%GENERATOR%"
 GOTO :end
 
 :regular32-asm
 ECHO "Building regular32 asm"
-cmake -DWithOpenSSLASM=ON -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithPCRE=ON -DWithLPEG=ON -DWithSharedPCRE=OFF -H. -Bbuild  -G"%GENERATOR%"
+cmake -DWithSigar=ON -DWithOpenSSLASM=ON -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithLPEG=ON -DWithPCRE=ON -DWithSharedPCRE=OFF -H. -Bbuild  -G"%GENERATOR%"
 GOTO :end
 
 :tiny
@@ -103,18 +103,18 @@ GOTO :end
 CALL make.bat reset
 CALL make.bat regular-asm
 CALL make.bat test
-github-release upload --user %LUVI_PUBLISH_USER% --repo %LUVI_PUBLISH_REPO% --tag %LUVI_TAG% --file luvi.exe --name luvi-regular-Windows-amd64.exe
-github-release upload --user %LUVI_PUBLISH_USER% --repo %LUVI_PUBLISH_REPO% --tag %LUVI_TAG% --file build\Release\luvi.lib --name luvi-regular-Windows-amd64.lib
-github-release upload --user %LUVI_PUBLISH_USER% --repo %LUVI_PUBLISH_REPO% --tag %LUVI_TAG% --file build\Release\luvi_renamed.lib --name luvi_renamed-regular-Windows-amd64.lib
+github-release upload --user %LUVI_PUBLISH_USER% --repo %LUVI_PUBLISH_REPO% --tag %LUVI_TAG% --file luvi.exe --name luvi-sigar-Windows-amd64.exe
+github-release upload --user %LUVI_PUBLISH_USER% --repo %LUVI_PUBLISH_REPO% --tag %LUVI_TAG% --file build\Release\luvi.lib --name luvi-sigar-Windows-amd64.lib
+github-release upload --user %LUVI_PUBLISH_USER% --repo %LUVI_PUBLISH_REPO% --tag %LUVI_TAG% --file build\Release\luvi_renamed.lib --name luvi_renamed-sigar-Windows-amd64.lib
 GOTO :end
 
 :publish-regular32
 CALL make.bat reset
 CALL make.bat regular32-asm
 CALL make.bat test
-github-release upload --user %LUVI_PUBLISH_USER% --repo %LUVI_PUBLISH_REPO% --tag %LUVI_TAG% --file luvi.exe --name luvi-regular-Windows-ia32.exe
-github-release upload --user %LUVI_PUBLISH_USER% --repo %LUVI_PUBLISH_REPO% --tag %LUVI_TAG% --file build\Release\luvi.lib --name luvi-regular-Windows-ia32.lib
-github-release upload --user %LUVI_PUBLISH_USER% --repo %LUVI_PUBLISH_REPO% --tag %LUVI_TAG% --file build\Release\luvi_renamed.lib --name luvi_renamed-regular-Windows-ia32.lib
+github-release upload --user %LUVI_PUBLISH_USER% --repo %LUVI_PUBLISH_REPO% --tag %LUVI_TAG% --file luvi.exe --name luvi-sigar-Windows-ia32.exe
+github-release upload --user %LUVI_PUBLISH_USER% --repo %LUVI_PUBLISH_REPO% --tag %LUVI_TAG% --file build\Release\luvi.lib --name luvi-sigar-Windows-ia32.lib
+github-release upload --user %LUVI_PUBLISH_USER% --repo %LUVI_PUBLISH_REPO% --tag %LUVI_TAG% --file build\Release\luvi_renamed.lib --name luvi_renamed-sigar-Windows-ia32.lib
 GOTO :end
 
 :publish

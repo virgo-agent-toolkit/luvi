@@ -22,3 +22,6 @@
 [submodule "deps/lpeg"]
 	path = deps/lpeg
 	url = https://github.com/luvit/lpeg.git
+[submodule "deps/lua-sigar"]
+	path = deps/lua-sigar
+	url = https://github.com/virgo-agent-toolkit/lua-sigar.git
