@@ -47,6 +47,10 @@ LUALIB_API int luaopen_luvi(lua_State *L) {
 #endif
   lua_pushstring(L, uv_version_string());
   lua_setfield(L, -2, "libuv");
+#ifdef WITH_SIGAR
+  lua_pushboolean(L, 1);
+  lua_setfield(L, -2, "sigar");
+#endif
   lua_setfield(L, -2, "options");
   return 1;
 }
