@@ -59,10 +59,10 @@ tiny: deps/luv/CMakeLists.txt
 
 # Configure the build with openssl statically included
 regular: deps/luv/CMakeLists.txt
-	cmake $(CMAKE_FLAGS) $(CPACK_FLAGS) -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF
+	cmake $(CMAKE_FLAGS) $(CPACK_FLAGS) -DWithSigar=ON -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF
 
 regular-asm: deps/luv/CMakeLists.txt
-	cmake $(CMAKE_FLAGS) $(CPACK_FLAGS) -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithOpenSSLASM=ON
+	cmake $(CMAKE_FLAGS) $(CPACK_FLAGS) -DWithSigar=ON -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithOpenSSLASM=ON
 
 package: deps/luv/CMakeLists.txt
 	cmake --build build -- package

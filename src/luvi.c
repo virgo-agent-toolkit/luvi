@@ -41,6 +41,10 @@ LUALIB_API int luaopen_luvi(lua_State *L) {
   lua_pushboolean(L, 1);
   lua_setfield(L, -2, "winsvc");
 #endif
+#ifdef WITH_SIGAR
+  lua_pushboolean(L, 1);
+  lua_setfield(L, -2, "sigar");
+#endif
   lua_setfield(L, -2, "options");
   return 1;
 }

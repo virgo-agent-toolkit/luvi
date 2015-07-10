@@ -28,21 +28,22 @@ endif()
 exec_program(
     "git"
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ARGS "describe" "--tags"
+    ARGS "describe"
     OUTPUT_VARIABLE LUVI_VERSION)
 
-option(WithSharedLibluv "Shared or Static libluv" OFF)
-option(WithOpenSSL "Include OpenSSL" OFF)
-option(WithOpenSSLASM "Enable Assembly Optimizations" OFF)
+option(WithSharedLibluv  "Shared or Static libluv" OFF)
+option(WithOpenSSL       "Include OpenSSL" OFF)
+option(WithOpenSSLASM    "Enable Assembly Optimizations" OFF)
 option(WithSharedOpenSSL "Shared or Static OpenSSL" ON)
-option(WithZLIB "Include ZLIB" OFF)
-option(WithSharedZLIB "Shared or Static ZLIB" ON)
-option(WithPackageSH "Build shell-installable package." OFF)
-option(WithPackageTGZ "Build gziped tarball package." OFF)
-option(WithPackageTBZ2 "Build bzip2'd tarball package." OFF)
-option(WithPackageDEB "Build DEB package." OFF)
-option(WithPackageRPM "Build RPM package." OFF)
-option(WithPackageNSIS "Build NSIS package." OFF)
+option(WithZLIB          "Include ZLIB" OFF)
+option(WithSigar         "Include Sigar" OFF)
+option(WithSharedZLIB    "Shared or Static ZLIB" ON)
+option(WithPackageSH     "Build shell-installable package." OFF)
+option(WithPackageTGZ    "Build gziped tarball package." OFF)
+option(WithPackageTBZ2   "Build bzip2'd tarball package." OFF)
+option(WithPackageDEB    "Build DEB package." OFF)
+option(WithPackageRPM    "Build RPM package." OFF)
+option(WithPackageNSIS   "Build NSIS package." OFF)
 option(WithPackageBUNDLE "Build OSX bundle." OFF)
 
 
@@ -81,6 +82,12 @@ if (WithZLIB)
   include(deps/zlib.cmake)
   add_definitions( -DWITH_ZLIB )
 endif (WithZLIB)
+
+if (WithSigar)
+  include(deps/sigar.cmake)
+  add_definitions( -DWITH_SIGAR )
+  set(EXTRA_LIBS ${EXTRA_LIBS} sigar)
+endif (WithSigar)
 
 add_definitions( -DLUVI_VERSION="${LUVI_VERSION}" )
 
