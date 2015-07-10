@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.9)
 
 if(WIN32)
-  set(projects C ASM ASM_MASM)
+  set(projects C CXX ASM ASM_MASM)
 else()
   set(projects C ASM)
 endif()
@@ -28,12 +28,12 @@ endif()
 exec_program(
     "git"
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ARGS "describe" "--tags"
+    ARGS "describe"
     OUTPUT_VARIABLE LUVI_VERSION)
 
-option(WithSharedLibluv "Shared or Static libluv" OFF)
-option(WithOpenSSL "Include OpenSSL" OFF)
-option(WithOpenSSLASM "Enable Assembly Optimizations" OFF)
+option(WithSharedLibluv  "Shared or Static libluv" OFF)
+option(WithOpenSSL       "Include OpenSSL" OFF)
+option(WithOpenSSLASM    "Enable Assembly Optimizations" OFF)
 option(WithSharedOpenSSL "Shared or Static OpenSSL" ON)
 option(WithPCRE "Include " OFF)
 option(WithSharedPCRE "Shared or Static " OFF)
@@ -45,6 +45,7 @@ option(WithPackageTBZ2 "Build bzip2'd tarball package." OFF)
 option(WithPackageDEB "Build DEB package." OFF)
 option(WithPackageRPM "Build RPM package." OFF)
 option(WithPackageNSIS "Build NSIS package." OFF)
+option(WithSigar         "Include Sigar" OFF)
 option(WithPackageBUNDLE "Build OSX bundle." OFF)
 
 
@@ -85,6 +86,15 @@ endif (WithPCRE)
 if (WithZLIB)
   include(deps/zlib.cmake)
 endif (WithZLIB)
+
+if (WithSigar)
+  include(deps/sigar.cmake)
+  add_definitions( -DWITH_SIGAR )
+  set(EXTRA_LIBS ${EXTRA_LIBS} sigar)
+  if(WIN32)
+    set(EXTRA_LIBS ${EXTRA_LIBS} ws2_32 netapi32 version)
+  endif()
+endif (WithSigar)
 
 add_definitions( -DLUVI_VERSION="${LUVI_VERSION}" )
 
