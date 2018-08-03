@@ -29,8 +29,8 @@ IF(WIN32)
     MESSAGE("Windows Arch Unknown")
   ENDIF()
 
-  ## make sure we only use the smallest set of 
-  ## headers on win32. Otherwise we get clashes 
+  ## make sure we only use the smallest set of
+  ## headers on win32. Otherwise we get clashes
   ## between winsock2.h and winsock.h
   ADD_DEFINITIONS(-DWIN32_LEAN_AND_MEAN)
   ADD_DEFINITIONS(-DWIN32)
@@ -74,6 +74,12 @@ IF(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   SET(SIGAR_SRC ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/src/os/linux/linux_sigar.c)
 
   INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/src/os/linux/)
+
+  IF(EXISTS /usr/include/tirpc)
+    INCLUDE_DIRECTORIES(/usr/include/tirpc)
+
+    SET(EXTRA_LIBS ${EXTRA_LIBS} -ltirpc)
+  ENDIF(EXISTS /usr/include/tirpc)
 ENDIF(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 
 ## macosx, freebsd
@@ -140,18 +146,18 @@ SET(SIGAR_SRC ${SIGAR_SRC}
   ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/src/sigar_ptql.c
   ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/src/sigar_signal.c
   ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/src/sigar_util.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar-cpu.c                 
-  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar-disk.c                
-  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar-fs.c                  
-  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar-load.c                 
-  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar-mem.c                 
-  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar-netif.c               
-  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar-proc.c                
-  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar-swap.c                
-  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar-sysinfo.c             
-  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar-test.lua              
-  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar-who.c                 
-  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar.c                     
+  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar-cpu.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar-disk.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar-fs.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar-load.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar-mem.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar-netif.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar-proc.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar-swap.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar-sysinfo.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar-test.lua
+  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar-who.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-sigar/deps/sigar/bindings/lua/sigar.c
 )
 
 ADD_LIBRARY(sigar STATIC ${SIGAR_SRC})
