@@ -40,6 +40,10 @@ if(MSVC)
   endforeach()
 endif()
 
+if(CMAKE_COMPILER_IS_GNUCC)
+  add_definitions( -Wno-unused-function)
+endif()
+
 if (EXISTS "VERSION")
   file (STRINGS "VERSION" LUVI_VERSION)
   message("-- Found luvi version: ${LUVI_VERSION}")
@@ -57,8 +61,9 @@ option(WithOpenSSL       "Include OpenSSL" OFF)
 option(WithOpenSSLASM    "Enable Assembly Optimizations" OFF)
 option(WithSharedOpenSSL "Shared or Static OpenSSL" ON)
 option(WithPCRE "Include " OFF)
-option(WithLPEG "Include " OFF)
 option(WithSharedPCRE "Shared or Static " OFF)
+option(WithLPEG "Include " OFF)
+option(WithSharedLPEG "Shared or Static " OFF)
 option(WithZLIB "Include ZLIB" OFF)
 option(WithSharedZLIB "Shared or Static ZLIB" ON)
 option(WithPackageSH "Build shell-installable package." OFF)
@@ -95,14 +100,19 @@ else (WithSharedLibluv)
   include_directories(deps/luv/deps/libuv/include)
   if (WITH_LUA_ENGINE STREQUAL Lua)
     include_directories(deps/luv/deps/lua/src)
-    set(LUVI_LIBRARIES luv lualib uv)
+    set(LUVI_LIBRARIES luv lualib uv_a)
   else()
     include_directories(deps/luv/deps/luajit/src)
-    set(LUVI_LIBRARIES luv luajit-5.1 uv)
+    set(LUVI_LIBRARIES luv luajit-5.1 uv_a)
   endif()
   add_subdirectory(deps/luv)
 endif (WithSharedLibluv)
 
+set(LUA_COMPAT53_DIR deps/luv/deps/lua-compat-5.3)
+if(DEFINED ENV{LUA_COMPAT53_DIR})
+  set(LUA_COMPAT53_DIR $ENV{LUA_COMPAT53_DIR})
+endif()
+include_directories(${LUA_COMPAT53_DIR})
 
 if (WithOpenSSL)
   include(deps/openssl.cmake)
@@ -113,6 +123,11 @@ if (WithPCRE)
 endif (WithPCRE)
 
 if (WithLPEG)
+  set(LPEGLIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/lpeg)
+  if(DEFINED ENV{LPEGLIB_DIR})
+    set(LPEGLIB_DIR $ENV{LPEGLIB_DIR})
+  endif()
+
   include (deps/lpeg.cmake)
 endif (WithLPEG)
 
@@ -131,9 +146,12 @@ endif (WithSigar)
 
 add_definitions( -DLUVI_VERSION="${LUVI_VERSION}" )
 
-if(MSVC)
+if(WIN32)
   set(winsvc src/winsvc.h src/winsvcaux.h src/winsvc.c src/winsvcaux.c)
-  add_definitions( -DWITH_WINSVC -DLUA_BUILD_AS_DLL -DBUILDING_UV_SHARED )
+  if(WithSharedLibluv)
+    add_definitions( -DLUA_BUILD_AS_DLL -DBUILDING_UV_SHARED )
+  endif()
+  add_definitions( -DWITH_WINSVC )
   add_definitions( -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS )
 
   add_library (luvi_renamed src/luvi_renamed.c)
@@ -147,12 +165,17 @@ if (WITH_LUA_ENGINE STREQUAL Lua)
   add_definitions(-DWITH_PLAIN_LUA)
 endif ()
 
+if(LPEGLIB_DIR)
+  set(lpeg_re_lua ${LPEGLIB_DIR}/re.lua)
+endif()
 lua_add_executable(luvi
   ${winsvc}
   src/main.c
+  src/luvi_compat.c
   src/lua/init.lua
   src/lua/luvipath.lua
   src/lua/luvibundle.lua
+  ${lpeg_re_lua}
 )
 
 if(APPLE)
@@ -168,6 +191,7 @@ if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
 endif()
 
 target_link_libraries(luvi ${LUVI_LIBRARIES} ${EXTRA_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+set_target_properties(luvi PROPERTIES ENABLE_EXPORTS ON)
 
 ###############################################################################
 ## Installation Targets

@@ -20,41 +20,66 @@
 #include "luv.h"
 #include "lenv.c"
 #include "luvi.c"
+#ifndef MINIZ_NO_STDIO
+#define MINIZ_NO_STDIO
+#endif
 #include "lminiz.c"
 #include "snapshot.c"
 #ifdef WITH_PCRE
 int luaopen_rex_pcre(lua_State* L);
 #endif
-#include "../deps/strlib.c"
 #ifdef WITH_PLAIN_LUA
 #include "../deps/bit.c"
 #endif
 
-#if WITH_CUSTOM
+#ifdef WITH_CUSTOM
 int luvi_custom(lua_State* L);
 #endif
+
+static int luvi_traceback(lua_State *L) {
+  if (!lua_isstring(L, 1))  /* 'message' not a string? */
+    return 1;  /* keep it intact */
+  lua_pushglobaltable(L);
+  lua_getfield(L, -1, "debug");
+  lua_remove(L, -2);
+  if (!lua_istable(L, -1)) {
+    lua_pop(L, 1);
+    return 1;
+  }
+  lua_getfield(L, -1, "traceback");
+  if (!lua_isfunction(L, -1)) {
+    lua_pop(L, 2);
+    return 1;
+  }
+  lua_pushvalue(L, 1);  /* pass error message */
+  lua_pushinteger(L, 2);  /* skip this function and traceback */
+  lua_call(L, 2, 1);  /* call debug.traceback */
+  return 1;
+}
 
 static lua_State* vm_acquire(){
   lua_State*L = luaL_newstate();
   if (L == NULL)
     return L;
 
-  // Add in the lua standard libraries
-  luaL_openlibs(L);
+  // Add in the lua standard and compat libraries
+  luvi_openlibs(L);
 
-  // Add string lua 5.3 compat apis, pack,unpack,packsize
-#if LUA_VERSION_NUM < 503
-  make_compat53_string(L);
-#endif
+  // Get package.loaded so that we can load modules
+  lua_getglobal(L, "package");
+  lua_getfield(L, -1, "loaded");
+
+  // load luv into uv in advance so that the metatables for async work.
+  lua_pushcfunction(L, luaopen_luv);
+  lua_call(L, 0, 1);
+  lua_setfield(L, -2, "uv");
+  
+  // remove package.loaded
+  lua_remove(L, -1);
 
   // Get package.preload so we can store builtins in it.
-  lua_getglobal(L, "package");
   lua_getfield(L, -1, "preload");
   lua_remove(L, -2); // Remove package
-
-  // Store uv module definition at preload.uv
-  lua_pushcfunction(L, luaopen_luv);
-  lua_setfield(L, -2, "uv");
 
   lua_pushcfunction(L, luaopen_env);
   lua_setfield(L, -2, "env");
@@ -103,6 +128,7 @@ static lua_State* vm_acquire(){
       lua_pushcfunction(L, luaopen_luvipath);
       lua_setfield(L, -2, "luvipath");
       luaL_requiref(L, "bit", luaopen_bit, 1);
+      lua_pop(L, 1);
   }
 #endif
 
@@ -121,6 +147,7 @@ int main(int argc, char* argv[] ) {
   lua_State* L;
   int index;
   int res;
+  int errfunc;
 
   // Hooks in libuv that need to be done in main.
   argv = uv_setup_args(argc, argv);
@@ -148,9 +175,14 @@ int main(int argc, char* argv[] ) {
   lua_setfield(L, -2, "winsvcaux");
 #endif
 
+  /* push debug function */
+  lua_pushcfunction(L, luvi_traceback);
+  errfunc = lua_gettop(L);
+
   // Load the init.lua script
   if (luaL_loadstring(L, "return require('init')(...)")) {
     fprintf(stderr, "%s\n", lua_tostring(L, -1));
+    vm_release(L);
     return -1;
   }
 
@@ -162,8 +194,9 @@ int main(int argc, char* argv[] ) {
   }
 
   // Start the main script.
-  if (lua_pcall(L, 1, 1, 0)) {
+  if (lua_pcall(L, 1, 1, errfunc)) {
     fprintf(stderr, "%s\n", lua_tostring(L, -1));
+    vm_release(L);
     return -1;
   }
 

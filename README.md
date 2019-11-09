@@ -2,8 +2,9 @@ luvi
 ====
 
 [![Linux Build Status](https://travis-ci.org/luvit/luvi.svg?branch=master)](https://travis-ci.org/luvit/luvi)
-
 [![Windows Build status](https://ci.appveyor.com/api/projects/status/h643wg5hkwsnu0wd/branch/master?svg=true)](https://ci.appveyor.com/project/racker-buildbot/luvi/branch/master)
+[![Code Quality: Cpp](https://img.shields.io/lgtm/grade/cpp/g/luvit/luvi.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/luvit/luvi/context:cpp)
+[![Total Alerts](https://img.shields.io/lgtm/alerts/g/luvit/luvi.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/luvit/luvi/alerts)
 
 A project in-between [luv][] and [luvit][].
 
@@ -129,7 +130,7 @@ the binary, the I/O to read from this is the same.  This is exposed as the
 #### bundle.stat(path)
 
 Load metadata about a file in the bundle.  This includes `type` ("file" or
-"tree"), `mtime` (in ms since epoch), and `size` (in bytes).
+"directory"), `mtime` (in ms since epoch), and `size` (in bytes).
 
 If the file doesn't exist, it returns `nil`.
 
@@ -195,16 +196,20 @@ based on CMake and is pretty simple.
 First clone this repo recursively.
 
 ```shell
-git clone --recursive git@github.com:luvit/luvi.git
+git clone --recursive https://github.com/luvit/luvi.git
 ```
 
 Then run the makefile inside it. (Note this assumes you have cmake in your path.)
 If you're on windows, there is a `make.bat` file that works mostly like the unix
 `Makefile`.
 
+Prior to building the `luvi` binary you must configure the version of `luvi`
+that you want to build. Currently there are two versions: `regular` and `tiny`.
+
 
 ```sh
 cd luvi
+make regular
 make
 make test
 ```

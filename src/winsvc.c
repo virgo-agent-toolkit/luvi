@@ -27,6 +27,7 @@ typedef struct {
   int lua_cb_ref;
   BOOL return_code;
   DWORD error;
+  lua_State* L;
 } svc_dispatch_info;
 
 typedef struct {
@@ -50,6 +51,7 @@ typedef struct _svc_baton {
   LPTSTR *lpszArgv;
   svc_handler_block block;
   struct _svc_baton* next;
+  lua_State* L;
 } svc_baton;
 
 /* linked list of batons */
@@ -87,8 +89,9 @@ DWORD WINAPI HandlerEx(_In_  DWORD dwControl, _In_  DWORD dwEventType, _In_  LPV
 }
 
 static void svchandler_cb(uv_async_t* handle) {
-  lua_State* L = luv_state(handle->loop);
   svc_baton* baton = handle->data;
+  lua_State* L = baton->L;
+
   lua_pushstring(L, "winsvc_error_cb");
   lua_gettable(L, LUA_REGISTRYINDEX);
   lua_rawgeti(L, LUA_REGISTRYINDEX, baton->block.lua_cb_ref);
@@ -106,8 +109,9 @@ static void svchandler_cb(uv_async_t* handle) {
 }
 
 static void svcmain_cb(uv_async_t* handle) {
-  lua_State* L = luv_state(handle->loop);
   svc_baton* baton = handle->data;
+  lua_State* L = baton->L;
+
   lua_pushstring(L, "winsvc_error_cb");
   lua_gettable(L, LUA_REGISTRYINDEX);
   lua_rawgeti(L, LUA_REGISTRYINDEX, baton->lua_main_ref);
@@ -121,7 +125,9 @@ static void svcmain_cb(uv_async_t* handle) {
   lua_pcall(L, 2, 0, -4);
 }
 
-static svc_baton* svc_create_baton(uv_loop_t* loop, const char* name, int main_ref, int cb_ref) {
+static svc_baton* svc_create_baton(lua_State* L, const char* name, int main_ref, int cb_ref) {
+  luv_ctx_t* ctx = luv_context(L);
+  uv_loop_t* loop = ctx->loop;
   svc_baton* baton = LocalAlloc(LPTR, sizeof(svc_baton));
   baton->lua_main_ref = main_ref;
   baton->block.lua_cb_ref = cb_ref;
@@ -133,6 +139,7 @@ static svc_baton* svc_create_baton(uv_loop_t* loop, const char* name, int main_r
   baton->svc_end_event = CreateEvent(NULL, TRUE, FALSE, NULL);
   baton->block.block_end_event = CreateEvent(NULL, TRUE, FALSE, NULL);
   baton->next = NULL;
+  baton->L = ctx->L;
   return baton;
 }
 
@@ -237,13 +244,10 @@ static int lua_SetServiceStatus(lua_State *L) {
 
   BOOL set = SetServiceStatus(SvcStatusHandler, (LPSERVICE_STATUS)&status);
   lua_pushboolean(L, set);
-  if (set) {
-    lua_pushnil(L);
-  }
-  else {
-    lua_pushinteger(L, GetLastError());
-  }
-  return 3;
+  if (set)
+    return 1;
+  lua_pushinteger(L, GetLastError());
+  return 2;
 }
 
 static int lua_ControlService(lua_State *L) {
@@ -254,12 +258,9 @@ static int lua_ControlService(lua_State *L) {
   BOOL set = ControlService(SvcCtrlHandler, dwControl, (LPSERVICE_STATUS)&status);
   lua_pushboolean(L, set);
   ServiceStatus_to_table(L, &status);
-  if (set) {
-    lua_pushnil(L);
-  }
-  else {
-    lua_pushinteger(L, GetLastError());
-  }
+  if (set)
+    return 2;
+  lua_pushinteger(L, GetLastError());
   return 3;
 }
 
@@ -288,18 +289,15 @@ static int lua_StartService(lua_State *L) {
 
   BOOL set = StartService(SvcCtrlHandler, (DWORD)numargs, args);
   lua_pushboolean(L, set);
-  if (set) {
-    lua_pushnil(L);
-  }
-  else {
-    lua_pushinteger(L, GetLastError());
-  }
+  if (set)
+    return 1;
+  lua_pushinteger(L, GetLastError());
   return 2;
 }
 
 static void svcdispatcher_end_cb(uv_async_t* handle) {
   svc_dispatch_info *info = (svc_dispatch_info*)handle->data;
-  lua_State* L = luv_state(handle->loop);
+  lua_State* L = info->L;
 
   /* Cleanup baton linked list */
   svc_baton *svc_baton_it = gBatons;
@@ -350,6 +348,7 @@ static int lua_SpawnServiceCtrlDispatcher(lua_State *L) {
   BOOL ret = FALSE;
   size_t len = 0;
   svc_dispatch_info *info = LocalAlloc(LPTR, sizeof(svc_dispatch_info));
+  info->L = luv_state(L);
   uv_async_init(luv_loop(L), &info->end_async_handle, svcdispatcher_end_cb);
   svc_baton** baton_pp = &gBatons;
 
@@ -373,7 +372,7 @@ static int lua_SpawnServiceCtrlDispatcher(lua_State *L) {
     int cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     lua_pop(L, 3);
 
-    *baton_pp = svc_create_baton(luv_loop(L), _strdup(name), main_ref, cb_ref);
+    *baton_pp = svc_create_baton(L, _strdup(name), main_ref, cb_ref);
     baton_pp = &(*baton_pp)->next;
 
     // count the entries
@@ -412,12 +411,9 @@ static int lua_SpawnServiceCtrlDispatcher(lua_State *L) {
   ret = thread != NULL;
 
   lua_pushboolean(L, ret);
-  if (ret) {
-    lua_pushnil(L);
-  }
-  else {
-    lua_pushinteger(L, GetLastError());
-  }
+  if (ret)
+    return 1;
+  lua_pushinteger(L, GetLastError());
   return 2;
 }
 
@@ -428,12 +424,10 @@ static int lua_OpenSCManager(lua_State *L) {
   SC_HANDLE h = OpenSCManager(machinename, databasename, access);
   if (h != NULL) {
     lua_pushlightuserdata(L, h);
-    lua_pushnil(L);
+    return 1;
   }
-  else {
-    lua_pushnil(L);
-    lua_pushinteger(L, GetLastError());
-  }
+  lua_pushnil(L);
+  lua_pushinteger(L, GetLastError());
   return 2;
 }
 
@@ -445,12 +439,10 @@ static int lua_OpenService(lua_State *L)
   SC_HANDLE h = OpenService(hSCManager, servicename, access);
   if (h != NULL) {
     lua_pushlightuserdata(L, h);
-    lua_pushnil(L);
+    return 1;
   }
-  else {
-    lua_pushnil(L);
-    lua_pushinteger(L, GetLastError());
-  }
+  lua_pushnil(L);
+  lua_pushinteger(L, GetLastError());
   return 2;
 }
 
@@ -475,13 +467,11 @@ static int lua_CreateService(lua_State *L) {
   if (h != NULL) {
     lua_pushlightuserdata(L, h);
     lua_pushinteger(L, tagid);
-    lua_pushnil(L);
+    return 2;
   }
-  else {
-    lua_pushnil(L);
-    lua_pushnil(L);
-    lua_pushinteger(L, GetLastError());
-  }
+  lua_pushnil(L);
+  lua_pushnil(L);
+  lua_pushinteger(L, GetLastError());
   return 3;
 }
 
@@ -489,12 +479,9 @@ static int lua_CloseServiceHandle(lua_State *L) {
   SC_HANDLE h = lua_touserdata(L, 1);
   BOOL ret = CloseServiceHandle(h);
   lua_pushboolean(L, ret);
-  if (ret) {
-    lua_pushnil(L);
-  }
-  else {
-    lua_pushinteger(L, GetLastError());
-  }
+  if (ret)
+    return 1;
+  lua_pushinteger(L, GetLastError());
   return 2;
 }
 
@@ -502,12 +489,9 @@ static int lua_DeleteService(lua_State *L) {
   SC_HANDLE h = lua_touserdata(L, 1);
   BOOL ret = DeleteService(h);
   lua_pushboolean(L, ret);
-  if (ret) {
-    lua_pushnil(L);
-  }
-  else {
-    lua_pushinteger(L, GetLastError());
-  }
+  if (ret)
+    return 1;
+  lua_pushinteger(L, GetLastError());
   return 2;
 }
 
@@ -515,24 +499,32 @@ static int lua_ChangeServiceConfig2(lua_State *L) {
   SC_HANDLE h = lua_touserdata(L, 1);
   DWORD dwInfoLevel = luaL_checkint(L, 2);
   union {
-    SERVICE_DELAYED_AUTO_START_INFO autostart;
     SERVICE_DESCRIPTION description;
     SERVICE_FAILURE_ACTIONS failure_actions;
+#if defined(_WINNT_VER) && _WINNT_VER >= _WIN32_WINNT_WIN6
+    SERVICE_DELAYED_AUTO_START_INFO autostart;
     SERVICE_FAILURE_ACTIONS_FLAG failure_actions_flag;
-    SERVICE_PREFERRED_NODE_INFO preferred_node;
     SERVICE_PRESHUTDOWN_INFO preshutdown_info;
     SERVICE_REQUIRED_PRIVILEGES_INFO privileges_info;
     SERVICE_SID_INFO sid_info;
+#endif
+#if defined(_WINNT_VER) && _WINNT_VER >= _WIN32_WINNT_WIN7
+    SERVICE_PREFERRED_NODE_INFO preferred_node;
+#endif
+#if defined(_WINNT_VER) && _WINNT_VER >= _WIN32_WINNT_WIN8LUE
     SERVICE_LAUNCH_PROTECTED_INFO protected_info;
+#endif
   } info, *infop = &info;
   memset(infop, 0, sizeof(info));
   luaL_checktype(L, 3, LUA_TTABLE);
 
   switch (dwInfoLevel)
   {
+#if defined(_WINNT_VER) && _WINNT_VER >= _WIN32_WINNT_WIN6
   case SERVICE_CONFIG_DELAYED_AUTO_START_INFO:
     info.autostart.fDelayedAutostart = GetIntFromTable(L, "fDelayedAutostart");
     break;
+#endif
   case SERVICE_CONFIG_DESCRIPTION:
     info.description.lpDescription = (char*)GetStringFromTable(L, "lpDescription");
     break;
@@ -558,13 +550,18 @@ static int lua_ChangeServiceConfig2(lua_State *L) {
       lua_pop(L, 1);
     }
     break;
+#if defined(_WINNT_VER) && _WINNT_VER >= _WIN32_WINNT_WIN6
   case SERVICE_CONFIG_FAILURE_ACTIONS_FLAG:
     info.failure_actions_flag.fFailureActionsOnNonCrashFailures = GetIntFromTable(L, "fFailureActionsOnNonCrashFailures");
     break;
+#endif
+#if defined(_WINNT_VER) && _WINNT_VER > _WIN32_WINNT_WIN7
   case SERVICE_CONFIG_PREFERRED_NODE:
     info.preferred_node.usPreferredNode = GetIntFromTable(L, "usPreferredNode");
     info.preferred_node.fDelete = GetIntFromTable(L, "fDelete");
     break;
+#endif
+#if defined(_WINNT_VER) && _WINNT_VER >= _WIN32_WINNT_WIN6
   case SERVICE_CONFIG_PRESHUTDOWN_INFO:
     info.preshutdown_info.dwPreshutdownTimeout = GetIntFromTable(L, "dwPreshutdownTimeout");
     break;
@@ -574,10 +571,13 @@ static int lua_ChangeServiceConfig2(lua_State *L) {
   case SERVICE_CONFIG_SERVICE_SID_INFO:
     info.sid_info.dwServiceSidType = GetIntFromTable(L, "dwServiceSidType");
     break;
+#endif
+#if defined(_WINNT_VER) && _WINNT_VER >= _WIN32_WINNT_WIN8LUE
   /* case SERVICE_CONFIG_TRIGGER_INFO unsupported by ANSI version of ChangeServiceConfig2 */
   case SERVICE_CONFIG_LAUNCH_PROTECTED:
     info.protected_info.dwLaunchProtected = GetIntFromTable(L, "dwLaunchProtected");
     break;
+#endif
   default:
     infop = NULL;
     break;
@@ -687,9 +687,11 @@ LUALIB_API int luaopen_winsvc(lua_State *L) {
   SETINT(SERVICE_CONTROL_HARDWAREPROFILECHANGE);
   SETINT(SERVICE_CONTROL_POWEREVENT);
   SETINT(SERVICE_CONTROL_SESSIONCHANGE);
+#if defined(_WINNT_VER) && _WINNT_VER >= _WIN32_WINNT_WIN6
   SETINT(SERVICE_CONTROL_PRESHUTDOWN);
   SETINT(SERVICE_CONTROL_TIMECHANGE);
   SETINT(SERVICE_CONTROL_TRIGGEREVENT);
+#endif
 
   SETINT(SERVICE_STOPPED);
   SETINT(SERVICE_START_PENDING);
@@ -707,9 +709,11 @@ LUALIB_API int luaopen_winsvc(lua_State *L) {
   SETINT(SERVICE_ACCEPT_HARDWAREPROFILECHANGE);
   SETINT(SERVICE_ACCEPT_POWEREVENT);
   SETINT(SERVICE_ACCEPT_SESSIONCHANGE);
+#if defined(_WINNT_VER) && _WINNT_VER >= _WIN32_WINNT_WIN6
   SETINT(SERVICE_ACCEPT_PRESHUTDOWN);
   SETINT(SERVICE_ACCEPT_TIMECHANGE);
   SETINT(SERVICE_ACCEPT_TRIGGEREVENT);
+#endif
 
   SETINT(SC_MANAGER_CONNECT);
   SETINT(SC_MANAGER_CREATE_SERVICE);
@@ -734,6 +738,7 @@ LUALIB_API int luaopen_winsvc(lua_State *L) {
 
   SETINT(SERVICE_CONFIG_DESCRIPTION);
   SETINT(SERVICE_CONFIG_FAILURE_ACTIONS);
+#if defined(_WINNT_VER) && _WINNT_VER > _WIN32_WINNT_WIN6
   SETINT(SERVICE_CONFIG_DELAYED_AUTO_START_INFO);
   SETINT(SERVICE_CONFIG_FAILURE_ACTIONS_FLAG);
   SETINT(SERVICE_CONFIG_SERVICE_SID_INFO);
@@ -804,13 +809,17 @@ LUALIB_API int luaopen_winsvc(lua_State *L) {
   SETINT(SERVICE_STOP_REASON_MINOR_MAX);
   SETINT(SERVICE_STOP_REASON_MINOR_MIN_CUSTOM);
   SETINT(SERVICE_STOP_REASON_MINOR_MAX_CUSTOM);
+#endif
 
+#if defined(_WINNT_VER) && _WINNT_VER > _WIN32_WINNT_WIN6
   SETINT(SERVICE_CONTROL_STATUS_REASON_INFO);
 
   SETINT(SERVICE_SID_TYPE_NONE);
   SETINT(SERVICE_SID_TYPE_UNRESTRICTED);
   SETINT(SERVICE_SID_TYPE_RESTRICTED);
+#endif
 
+#if defined(_WINNT_VER) && _WINNT_VER > _WIN32_WINNT_WIN7
   SETINT(SERVICE_TRIGGER_TYPE_DEVICE_INTERFACE_ARRIVAL);
   SETINT(SERVICE_TRIGGER_TYPE_IP_ADDRESS_AVAILABILITY);
   SETINT(SERVICE_TRIGGER_TYPE_DOMAIN_JOIN);
@@ -825,7 +834,9 @@ LUALIB_API int luaopen_winsvc(lua_State *L) {
   SETINT(SERVICE_TRIGGER_DATA_TYPE_LEVEL);
   SETINT(SERVICE_TRIGGER_DATA_TYPE_KEYWORD_ANY);
   SETINT(SERVICE_TRIGGER_DATA_TYPE_KEYWORD_ALL);
+#endif
 
+#if defined(_WINNT_VER) && _WINNT_VER > _WIN32_WINNT_WIN7
   SETINT(SERVICE_START_REASON_DEMAND);
   SETINT(SERVICE_START_REASON_AUTO);
   SETINT(SERVICE_START_REASON_TRIGGER);
@@ -833,14 +844,19 @@ LUALIB_API int luaopen_winsvc(lua_State *L) {
   SETINT(SERVICE_START_REASON_DELAYEDAUTO);
 
   SETINT(SERVICE_DYNAMIC_INFORMATION_LEVEL_START_REASON);
+#endif
 
+#if defined(_WINNT_VER) && _WINNT_VER > _WIN32_WINNT_WIN8LUE
   SETINT(SERVICE_LAUNCH_PROTECTED_NONE);
   SETINT(SERVICE_LAUNCH_PROTECTED_WINDOWS);
   SETINT(SERVICE_LAUNCH_PROTECTED_WINDOWS_LIGHT);
   SETINT(SERVICE_LAUNCH_PROTECTED_ANTIMALWARE_LIGHT);
+#endif
 
+#if defined(_WINNT_VER) && _WINNT_VER > _WIN32_WINNT_WIN7
   SETINT(SERVICE_TRIGGER_ACTION_SERVICE_START);
   SETINT(SERVICE_TRIGGER_ACTION_SERVICE_STOP);
+#endif
 
   SETINT(SC_ACTION_NONE);
   SETINT(SC_ACTION_RESTART);

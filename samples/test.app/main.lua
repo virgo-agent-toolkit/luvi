@@ -5,8 +5,7 @@ local bundle = require('luvi').bundle
 bundle.register("utils", "utils.lua")
 
 local utils = require('utils')
-local dump = require('utils').dump
-
+local p = utils.prettyPrint
 local stdout = utils.stdout
 
 
@@ -44,18 +43,6 @@ local function deepEqual(expected, actual, path)
     end
   end
   return true
-end
-
-_G.p = function (...)
-  local n = select('#', ...)
-  local arguments = { ... }
-
-  for i = 1, n do
-    arguments[i] = dump(arguments[i])
-  end
-
-  local toWrite = table.concat(arguments, "\t") .. "\n"
-  uv.write(stdout, toWrite);
 end
 
 local env = setmetatable({}, {
@@ -152,12 +139,13 @@ for i = 1, #tests, 2 do
   assert(deepEqual(expected, actual), "ERROR: readdir(" .. path .. ")")
 end
 
-print("Testing for lua 5.2 extensions")
-local thread, ismain = coroutine.running()
-p(thread, ismain)
-assert(thread)
-assert(ismain)
-
+if _VERSION=="Lua 5.2" then
+  print("Testing for lua 5.2 extensions")
+  local thread, ismain = coroutine.running()
+  p(thread, ismain)
+  assert(thread)
+  assert(ismain)
+end
 
 print("Testing miniz")
 local miniz = require('miniz')
@@ -182,6 +170,45 @@ writer:add("a/big/file.dat", string.rep("12345\n", 10000), 9)
 writer:add("main.lua", 'print(require("luvi").version)', 9)
 
 p("zip bytes", #writer:finalize())
+
+do
+  print("miniz zlib compression - full data")
+  local original = bundle.readfile("sonnet-133.txt")
+  local deflator = miniz.new_deflator(9)
+  local deflated, err, part = deflator:deflate(original, "finish")
+  p("Compressed", #(deflated or part or ""))
+  deflated = assert(deflated, err)
+  local inflator = miniz.new_inflator()
+  local inflated, err, part = inflator:inflate(deflated, "finish")
+  p("Decompressed", #(inflated or part or ""))
+  inflated = assert(inflated, err)
+
+  assert(inflated == original, "inflated data doesn't match original")
+end
+
+do
+  print("miniz zlib compression - partial data stream")
+  local original_full = bundle.readfile("sonnet-133.txt")
+  local original_parts = { }
+  for part in original_full:gmatch((".?"):rep(64)) do
+    original_parts[#original_parts+1] = part
+  end
+  local deflator = miniz.new_deflator(9)
+  local inflator = miniz.new_inflator()
+  for i, part in ipairs(original_parts) do
+    p("part", part)
+    local deflated, err, partial = deflator:deflate(part,
+      i == #original_parts and "finish" or "sync")
+    p("compressed", deflated, partial)
+    deflated = assert(not err, err) and (deflated or partial)
+    local inflated, err, partial = inflator:inflate(deflated,
+      i == #original_parts and "finish" or "sync")
+    p("decompressed", inflated, partial)
+    inflated = assert(not err, err) and (inflated or partial)
+
+    assert(inflated == part, "inflated data doesn't match original")
+  end
+end
 
 local options = require('luvi').options
 
@@ -215,3 +242,5 @@ if options.rex then
 end
 
 print("All tests pass!\n")
+
+require('uv').run()

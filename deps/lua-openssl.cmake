@@ -1,19 +1,33 @@
 set(LUA_OPENSSL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/lua-openssl)
+if(DEFINED ENV{LUA_OPENSSL_DIR})
+  set(LUA_OPENSSL_DIR $ENV{LUA_OPENSSL_DIR})
+endif()
 
 include_directories(
-  ${LUA_OPENSSL_DIR}/deps
+  ${CMAKE_BINARY_DIR}/include
+  ${LUA_OPENSSL_DIR}/deps/auxiliar
+  ${LUA_OPENSSL_DIR}/deps/lua-compat
   ${LUA_OPENSSL_DIR}/src
 )
 
+add_definitions(
+  -DCOMPAT52_IS_LUAJIT
+)
+
 if(WIN32)
+  add_definitions(
+    -DWIN32_LEAN_AND_MEAN
+    -D_CRT_SECURE_NO_WARNINGS
+  )
 else()
   find_package(Threads)
   add_definitions(-DPTHREADS)
 endif()
 
 add_library(lua_openssl
+  ${LUA_OPENSSL_DIR}/deps/auxiliar/auxiliar.c
+  ${LUA_OPENSSL_DIR}/deps/auxiliar/subsidiar.c
   ${LUA_OPENSSL_DIR}/src/asn1.c
-  ${LUA_OPENSSL_DIR}/src/auxiliar.c
   ${LUA_OPENSSL_DIR}/src/bio.c
   ${LUA_OPENSSL_DIR}/src/callback.c
   ${LUA_OPENSSL_DIR}/src/cipher.c
@@ -40,6 +54,7 @@ add_library(lua_openssl
   ${LUA_OPENSSL_DIR}/src/private.h
   ${LUA_OPENSSL_DIR}/src/rsa.c
   ${LUA_OPENSSL_DIR}/src/sk.h
+  ${LUA_OPENSSL_DIR}/src/srp.c
   ${LUA_OPENSSL_DIR}/src/ssl.c
   ${LUA_OPENSSL_DIR}/src/th-lock.c
   ${LUA_OPENSSL_DIR}/src/util.c
@@ -51,13 +66,13 @@ add_library(lua_openssl
   ${LUA_OPENSSL_DIR}/src/xstore.c
 )
 
-set_target_properties(lua_openssl PROPERTIES
-    COMPILE_FLAGS "-DLUA_LIB -DCOMPAT52_IS_LUAJIT")
+set_target_properties(lua_openssl PROPERTIES COMPILE_FLAGS "-DLUA_LIB")
 
 if (WithSharedOpenSSL)
   target_link_libraries(lua_openssl ssl crypto)
 else (WithSharedOpenSSL)
-  target_link_libraries(lua_openssl openssl)
+  add_dependencies(lua_openssl openssl)
+  target_link_libraries(lua_openssl openssl_ssl openssl_crypto)
 endif (WithSharedOpenSSL)
 
 set(EXTRA_LIBS ${EXTRA_LIBS} lua_openssl)
