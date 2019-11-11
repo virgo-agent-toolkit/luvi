@@ -22,7 +22,7 @@ before_install:
   - git submodule update --recursive
 
 script:
-  - git fetch -t
+  - git fetch -t --recurse-submodules=no
   - WITHOUT_AMALG=1 make ${BUILD_TYPE}
   - make test
 
