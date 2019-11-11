@@ -13,8 +13,6 @@ env:
   - BUILD_TYPE=tiny
   - BUILD_TYPE=regular-asm
 
-dist: bionic
-
 os:
   - linux
   - osx
@@ -24,7 +22,7 @@ before_install:
   - git submodule update --recursive
 
 script:
-  - git fetch --unshallow
+  - git fetch -t
   - WITHOUT_AMALG=1 make ${BUILD_TYPE}
   - make test
 
