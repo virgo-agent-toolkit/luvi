@@ -20,7 +20,7 @@ GOTO :end
 
 :regular-asm
 ECHO "Building regular64 asm"
-cmake -DWithSigar=ON -DWithOpenSSLASM=ON -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithLPEG=ON -DWithPCRE=ON -DWithSharedPCRE=OFF -H. -Bbuild  -G"%GENERATOR64%"
+cmake --debug-output -DWithSigar=ON -DWithOpenSSLASM=ON -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithLPEG=ON -DWithPCRE=ON -DWithSharedPCRE=OFF -H. -Bbuild  -G"%GENERATOR64%"
 GOTO :end
 
 :regular32
@@ -30,7 +30,7 @@ GOTO :end
 
 :regular32-asm
 ECHO "Building regular32 asm"
-cmake -DWithSigar=ON -DWithOpenSSLASM=ON -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithLPEG=ON -DWithPCRE=ON -DWithSharedPCRE=OFF -H. -Bbuild  -G"%GENERATOR%"
+cmake --debug-output -DWithSigar=ON -DWithOpenSSLASM=ON -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithLPEG=ON -DWithPCRE=ON -DWithSharedPCRE=OFF -H. -Bbuild  -G"%GENERATOR%"
 GOTO :end
 
 :tiny
