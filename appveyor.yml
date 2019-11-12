@@ -1,14 +1,19 @@
-image: Visual Studio 2015
+image: Visual Studio 2017
 configuration: Release
 
 environment:
   matrix:
     - BUILD_TYPE: tiny
+    - BUILD_TYPE: tiny32
     - BUILD_TYPE: regular-asm
     - BUILD_TYPE: regular32-asm
 
 matrix:
   fast_finish: true
+
+install:
+  - choco install nasm
+  - set PATH="C:\Program Files\NASM";%PATH%
 
 build_script:
  - git submodule update --init --recursive
@@ -18,9 +23,26 @@ build_script:
 test_script:
  - Make.bat test
 
-artifacts:
- - path: luvi.exe
+after_build:
+ - Make.bat artifacts-%BUILD_TYPE%
 
-notifications:
-  email: true
-  irc: "irc.freenode.org#luvit"
+artifacts:
+ - path: artifacts\*.exe
+ - path: artifacts\*.lib
+
+cache:
+  - C:\ProgramData\chocolatey\bin -> appveyor.yml
+  - C:\ProgramData\chocolatey\lib -> appveyor.yml
+  - C:\Program Files\NASM -> appveyor.yml
+
+deploy:
+  description: '' # appveyor says this is mandatory
+  provider: GitHub
+  auth_token:
+    secure: KCCaJvNw6iNqu6qERJs1SYngpTJhxJ0Hk45JsQUnIQ6SsGbDs3fddUw565t8XO+H
+  artifact: /.*/ # everything
+  draft: false
+  prerelease: false
+  force_update: true
+  on:
+    APPVEYOR_REPO_TAG: true # tags only
