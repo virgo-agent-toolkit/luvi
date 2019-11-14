@@ -45,7 +45,7 @@ GOTO :end
 
 :build
 IF NOT EXIST build CALL Make.bat regular
-cmake --trace-expand --build build --config Release
+cmake --build build --config Release
 COPY build\Release\luvi.exe .
 GOTO :end
 
