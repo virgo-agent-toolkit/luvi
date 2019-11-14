@@ -1,6 +1,6 @@
 LUVI_TAG=$(shell git describe)
 LUVI_ARCH=$(shell uname -s)_$(shell uname -m)
-LUVI_PUBLISH_USER?=luvit
+LUVI_PUBLISH_USER?=virgo-agent-toolkit
 LUVI_PUBLISH_REPO?=luvi
 LUVI_PREFIX?=/usr/local
 LUVI_BINDIR?=$(LUVI_PREFIX)/bin
@@ -64,10 +64,10 @@ tiny: deps/luv/CMakeLists.txt
 
 # Configure the build with openssl statically included
 regular: deps/luv/CMakeLists.txt
-	cmake $(CMAKE_FLAGS) $(CPACK_FLAGS) -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithPCRE=ON -DWithLPEG=ON -DWithSharedPCRE=OFF
+	cmake $(CMAKE_FLAGS) $(CPACK_FLAGS) -DWithSigar=ON -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithPCRE=ON -DWithLPEG=ON -DWithSharedPCRE=OFF
 
 regular-asm: deps/luv/CMakeLists.txt
-	cmake $(CMAKE_FLAGS) $(CPACK_FLAGS) -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithOpenSSLASM=ON -DWithPCRE=ON -DWithLPEG=ON -DWithSharedPCRE=OFF
+	cmake $(CMAKE_FLAGS) $(CPACK_FLAGS) -DWithSigar=ON -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithOpenSSLASM=ON -DWithPCRE=ON -DWithLPEG=ON -DWithSharedPCRE=OFF
 
 # Configure the build with shared openssl
 regular-shared:

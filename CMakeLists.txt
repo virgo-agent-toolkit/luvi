@@ -72,7 +72,7 @@ option(WithPackageTBZ2 "Build bzip2'd tarball package." OFF)
 option(WithPackageDEB "Build DEB package." OFF)
 option(WithPackageRPM "Build RPM package." OFF)
 option(WithPackageNSIS "Build NSIS package." OFF)
-option(WithSigar         "Include Sigar" ON)
+option(WithSigar         "Include Sigar" OFF)
 option(WithPackageBUNDLE "Build OSX bundle." OFF)
 
 find_package(Threads)
