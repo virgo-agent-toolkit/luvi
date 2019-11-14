@@ -72,6 +72,7 @@ option(WithPackageTBZ2 "Build bzip2'd tarball package." OFF)
 option(WithPackageDEB "Build DEB package." OFF)
 option(WithPackageRPM "Build RPM package." OFF)
 option(WithPackageNSIS "Build NSIS package." OFF)
+option(WithSigar         "Include Sigar" ON)
 option(WithPackageBUNDLE "Build OSX bundle." OFF)
 
 find_package(Threads)
@@ -133,6 +134,15 @@ endif (WithLPEG)
 if (WithZLIB)
   include(deps/zlib.cmake)
 endif (WithZLIB)
+
+if (WithSigar)
+  include(deps/sigar.cmake)
+  add_definitions( -DWITH_SIGAR )
+  set(EXTRA_LIBS ${EXTRA_LIBS} sigar)
+  if(WIN32)
+    set(EXTRA_LIBS ${EXTRA_LIBS} ws2_32 netapi32 version)
+  endif()
+endif (WithSigar)
 
 add_definitions( -DLUVI_VERSION="${LUVI_VERSION}" )
 
