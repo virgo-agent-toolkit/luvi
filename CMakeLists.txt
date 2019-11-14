@@ -137,7 +137,7 @@ endif (WithZLIB)
 
 if (WithSigar)
   include(deps/sigar.cmake)
-#  add_definitions( -DWITH_SIGAR )
+  add_definitions( -DWITH_SIGAR )
 #  set(EXTRA_LIBS ${EXTRA_LIBS} sigar)
 #  if(WIN32)
 #    set(EXTRA_LIBS ${EXTRA_LIBS} ws2_32 netapi32 version)
