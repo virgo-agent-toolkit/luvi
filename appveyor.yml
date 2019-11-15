@@ -5,8 +5,8 @@ environment:
   matrix:
     - BUILD_TYPE: tiny
     - BUILD_TYPE: tiny32
-    - BUILD_TYPE: regular-asm
-    - BUILD_TYPE: regular32-asm
+    - BUILD_TYPE: sigar
+    - BUILD_TYPE: sigar32
 
 matrix:
   fast_finish: true
