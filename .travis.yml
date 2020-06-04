@@ -12,6 +12,7 @@ sudo: false
 env:
   - BUILD_TYPE=tiny
   - BUILD_TYPE=regular-asm
+  - BUILD_TYPE=sigar-asm
 
 os:
   - linux
@@ -43,8 +44,10 @@ jobs:
         file:
           - "luvi-regular-Linux_x86_64"
           - "luvi-tiny-Linux_x86_64"
+          - "luvi-sigar-Linux_x86_64"
           - "luvi-regular-Linux_i686"
           - "luvi-tiny-Linux_i686"
+          - "luvi-sigar-Linux_i686"
         overwrite: true
         skip_cleanup: true
         on:

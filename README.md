@@ -331,7 +331,7 @@ eval $(docker-machine env holy-build-box)
 2. Start the build
 
 ```
-make linux-build
+make clean linux-build
 ```
 
 3. Results should be the current working directory.

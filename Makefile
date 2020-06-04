@@ -64,9 +64,15 @@ tiny: deps/luv/CMakeLists.txt
 
 # Configure the build with openssl statically included
 regular: deps/luv/CMakeLists.txt
-	cmake $(CMAKE_FLAGS) $(CPACK_FLAGS) -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithPCRE=ON -DWithSharedPCRE=OFF -DWithSigar=ON -DWithLPEG=ON
+	cmake $(CMAKE_FLAGS) $(CPACK_FLAGS) -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithPCRE=ON -DWithSharedPCRE=OFF -DWithLPEG=ON
 
 regular-asm: deps/luv/CMakeLists.txt
+	cmake $(CMAKE_FLAGS) $(CPACK_FLAGS) -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithOpenSSLASM=ON -DWithPCRE=ON -DWithSharedPCRE=OFF -DWithLPEG=ON
+
+sigar: deps/luv/CMakeLists.txt
+	cmake $(CMAKE_FLAGS) $(CPACK_FLAGS) -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithPCRE=ON -DWithSharedPCRE=OFF -DWithSigar=ON -DWithLPEG=ON
+
+sigar-asm: deps/luv/CMakeLists.txt
 	cmake $(CMAKE_FLAGS) $(CPACK_FLAGS) -DWithOpenSSL=ON -DWithSharedOpenSSL=OFF -DWithOpenSSLASM=ON -DWithPCRE=ON -DWithSharedPCRE=OFF -DWithSigar=ON -DWithLPEG=ON
 
 # Configure the build with shared openssl
@@ -121,7 +127,10 @@ travis-regular-asm: reset regular-asm
 	$(MAKE)
 	mv build/luvi luvi-regular-$(OS)_$(ARCH)
 
-linux-build: linux-build-box-regular linux-build-box32-regular linux-build-box-tiny linux-build-box32-tiny
+linux-build: \
+	linux-build-box-regular linux-build-box32-regular \
+	linux-build-box-sigar linux-build-box32-sigar \
+	linux-build-box-tiny linux-build-box32-tiny
 
 linux-build-box-regular: luvi-src.tar.gz
 	rm -rf build && mkdir -p build
@@ -137,6 +146,21 @@ linux-build-box32-regular: luvi-src.tar.gz
 	docker run -t -i --rm \
 		  -v `pwd`/build:/io phusion/holy-build-box-32:latest linux32 bash /io/holy-build.sh regular-asm
 	mv build/luvi luvi-regular-Linux_i686
+
+linux-build-box-sigar: luvi-src.tar.gz
+	rm -rf build && mkdir -p build
+	cp packaging/holy-build.sh luvi-src.tar.gz build
+	mkdir -p build
+	docker run -t -i --rm \
+		  -v `pwd`/build:/io phusion/holy-build-box-64:latest bash /io/holy-build.sh sigar-asm
+	mv build/luvi luvi-sigar-Linux_x86_64
+
+linux-build-box32-sigar: luvi-src.tar.gz
+	rm -rf build && mkdir -p build
+	cp packaging/holy-build.sh luvi-src.tar.gz build
+	docker run -t -i --rm \
+		  -v `pwd`/build:/io phusion/holy-build-box-32:latest linux32 bash /io/holy-build.sh sigar-asm
+	mv build/luvi luvi-sigar-Linux_i686
 
 linux-build-box-tiny: luvi-src.tar.gz
 	rm -rf build && mkdir -p build
